@@ -235,7 +235,11 @@ function renderTable() {
       <td data-label="#">${globalIndex}</td>
       <td data-label="Name">${user.name}</td>
       <td data-label="Surname">${user.surname}</td>
-      <td data-label="Phone"><a href="tel:${user.phone}">${user.phone}</a></td>
+      <td data-label="Phone">
+        <a href="tel:${user.phone ? (user.phone.startsWith("+998") ? user.phone : "+998" + user.phone) : 'N/A'}">
+          ${user.phone ? (user.phone.startsWith("+998") ? user.phone : "+998" + user.phone) : 'N/A'}
+        </a>
+      </td>
       <td data-label="Actions">
         <button class="action-btn" onclick='deleteUser("${user._id}")'>Delete</button>
       </td>
