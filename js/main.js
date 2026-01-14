@@ -101,27 +101,79 @@ function renderTable() {
   selectAll.indeterminate = checkedCount > 0 && checkedCount < users.length;
 }
 
+/* CHANGE USER GROUP - faqat mavjud guruhga */
+async function changeUserGroup(userId) {
+  if (!currentGroupId) return alert("Select a group first");
+
+  // Foydalanuvchiga mavjud guruhlar ro'yxatini ko'rsatish
+  const groupNames = groups.map((g) => g.name).join(", ");
+  const newGroupName = prompt(`Choose a group from: ${groupNames}`);
+  if (!newGroupName || newGroupName.trim() === "") return;
+
+  const newGroup = groups.find((g) => g.name === newGroupName.trim());
+  if (!newGroup) return alert("This group does not exist");
+
+  try {
+    // Backendga update yuborish
+    await fetch(`${API_USERS}/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: newGroup._id }),
+    });
+
+    // Telegram xabar yuborish
+    await fetch(API_SEND_MESSAGE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userIds: [userId],
+        message: `Sizning guruhingiz ${newGroup.name} ga o'zgartirildi.`,
+      }),
+    });
+
+    alert("User group changed successfully!");
+    // Agar foydalanuvchi hozirgi ko‘rsatilgan guruhda bo‘lsa, table ni yangilash
+    if (currentGroupId === newGroup._id) {
+      await loadUsers();
+    } else {
+      // Aks holda, foydalanuvchi hozirgi guruhdan ketadi, table yangilanadi
+      users = users.filter((u) => u._id !== userId);
+      renderTable();
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Failed to change user group");
+  }
+}
+
 /* Attendance save */
 async function markAttendance(userId, status) {
   if (!currentGroupId) return alert("Select a group first");
+
   try {
+    // Attendance ni backendga saqlash
     await fetch(API_ATTENDANCE, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, groupId: currentGroupId, status }),
     });
+
     attendance[userId] = status;
     renderTable();
 
-    // Telegram bot message
+    // Bugungi sana
+    const today = new Date();
+    const dateStr = today.toLocaleDateString(); // yoki .toLocaleString() agar vaqt ham kerak bo‘lsa
+
+    // Telegram botga xabar yuborish
     await fetch(API_SEND_MESSAGE, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userIds: [userId],
         message: `Sizning bugungi davomatingiz: ${
-          status === "present" ? "kelgan" : "kelmagan"
-        }`,
+          status === "present" ? "KELGAN" : "KELMAGAN"
+        } (${dateStr})`,
       }),
     });
   } catch (err) {
