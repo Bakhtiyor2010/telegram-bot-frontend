@@ -285,21 +285,25 @@ async function sendMessage() {
   const text = document.getElementById("messageText").value.trim();
   if (!text) return alert("Message empty");
 
-  // selectedUsers bo'sh bo'lmasligi kerak
   if (selectedUsers.size === 0) return alert("Select users");
 
   try {
-    const res = await fetch(API_ATTENDANCE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: Array.from(selectedUsers), // array of user IDs
-        message: text // telegramga jo'natiladigan matn
-      }),
-    });
+    const usersToSend = users.filter(u => selectedUsers.has(u._id));
+    
+    // Foydalanuvchining ismi/familiyasi bilan xabar yaratish
+    const messages = usersToSend.map(u => ({
+      userId: u._id,
+      message: `Salom, hurmatli ${u.name || ""} ${u.surname || ""}!\n${text}`
+    }));
 
-    const data = await res.json();
-    if (!res.ok) return alert(data.error || "Failed to send message");
+    // Har bir foydalanuvchi uchun POST yuborish
+    for (const msgObj of messages) {
+      await fetch(API_ATTENDANCE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(msgObj),
+      });
+    }
 
     alert("Message sent ✅");
     document.getElementById("messageText").value = "";
@@ -319,17 +323,18 @@ async function sendToAll() {
   if (!users || users.length === 0) return alert("No users to send message");
 
   try {
-    const res = await fetch(API_ATTENDANCE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: users.map(u => u._id), // barcha foydalanuvchilar
-        message: text
-      }),
-    });
+    const messages = users.map(u => ({
+      userId: u._id,
+      message: `Salom, hurmatli ${u.name || ""} ${u.surname || ""}!\n${text}`
+    }));
 
-    const data = await res.json();
-    if (!res.ok) return alert(data.error || "Failed to send message to all users");
+    for (const msgObj of messages) {
+      await fetch(API_ATTENDANCE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(msgObj),
+      });
+    }
 
     alert("Message sent to all users ✅");
     document.getElementById("messageText").value = "";
