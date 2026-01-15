@@ -12,22 +12,39 @@ let attendance = {};
 let selectedUsers = new Set();
 let groups = [];
 let currentGroupId = null;
+let ADMIN_ROLE = null;
 
 const tableBody = document.getElementById("tableBody");
 const groupList = document.getElementById("groupList");
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // login sahifasidan kelgan role-ni olish
+  ADMIN_ROLE = localStorage.getItem("ADMIN_ROLE");
+
+  // Moderator/Admin uchun Payment sectionni yashirish
+  if (ADMIN_ROLE === "moderator" || ADMIN_ROLE === "admin") {
+    const paymentSection = document.getElementById("paymentSection");
+    if (paymentSection) paymentSection.style.display = "none";
+  }
+
   await loadGroups();
 });
 
 async function loadGroups() {
+  const loader = document.getElementById("groupLoader");
+  loader.style.display = "block";
+  groupList.innerHTML = "";
+
   try {
     const res = await fetch(API_GROUPS);
+    if (!res.ok) throw new Error("API error");
     groups = await res.json();
     renderGroups();
   } catch (err) {
     console.error(err);
     alert("Failed to load groups");
+  } finally {
+    loader.style.display = "none";
   }
 }
 
@@ -150,35 +167,24 @@ async function changeUserGroup(userId) {
 async function markAttendance(userId, status) {
   if (!currentGroupId) return alert("Select a group first");
 
+  attendance[userId] = status;
+  renderTable();
+
+  const dateStr = new Date().toLocaleDateString();
+
   try {
-    // Attendance ni backendga saqlash
-    await fetch(API_ATTENDANCE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, groupId: currentGroupId, status }),
-    });
-
-    attendance[userId] = status;
-    renderTable();
-
-    // Bugungi sana
-    const today = new Date();
-    const dateStr = today.toLocaleDateString(); // yoki .toLocaleString() agar vaqt ham kerak bo‘lsa
-
-    // Telegram botga xabar yuborish
     await fetch(API_SEND_MESSAGE, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userIds: [userId],
-        message: `Sizning bugungi davomatingiz: ${
-          status === "present" ? "KELGAN" : "KELMAGAN"
+        message: `Siz bugun ${
+          status === "present" ? "KELDINGIZ" : "KELMADINGIZ"
         } (${dateStr})`,
       }),
     });
   } catch (err) {
-    console.error(err);
-    alert("Failed to save attendance or send message");
+    alert("Failed to send message");
   }
 }
 
@@ -209,18 +215,25 @@ function createGroup() {
   input.value = "";
 }
 
+function setAdminRole(role) {
+  ADMIN_ROLE = role; // faqat frontend memoryda saqlanadi
+  renderGroups();    // role o‘zgarganda UI yangilansin
+}
+
 function renderGroups() {
   groupList.innerHTML = "";
+
   groups.forEach((g) => {
     const div = document.createElement("div");
-    div.style.display = "flex"; // yonma-yon
-    div.style.alignItems = "center"; // vertikal markazlash
-    div.style.justifyContent = "space-between"; // tugmalar orasida bo'sh joy
-    div.style.marginBottom = "10px"; // pastga bo'sh joy
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "space-between";
+    div.style.marginBottom = "10px";
 
+    // Group nomi button
     const nameBtn = document.createElement("button");
     nameBtn.textContent = g.name;
-    nameBtn.style.flexGrow = "1"; // qolgan joyni egallaydi
+    nameBtn.style.flexGrow = "1";
     nameBtn.style.textAlign = "center";
     nameBtn.style.padding = "8px";
     nameBtn.style.border = "1px solid #007bff";
@@ -228,74 +241,42 @@ function renderGroups() {
     nameBtn.style.background = "#007bff";
     nameBtn.style.color = "white";
     nameBtn.style.cursor = "pointer";
+
     nameBtn.onclick = async () => {
       currentGroupId = g._id;
       document.getElementById("groupTitle").textContent = g.name;
       await loadUsers();
-      await loadAttendance(g._id);
     };
 
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "Edit";
-    editBtn.className = "edit-btn";
-    editBtn.style.background = "#ffc107";
-    editBtn.style.padding = "10px 20px";
-    editBtn.style.marginLeft = "5px";
-    editBtn.style.width = "fit-content";
-    editBtn.onclick = () => editGroupPrompt(g._id);
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "Delete";
-    delBtn.className = "delete-btn";
-    delBtn.style.background = "#dc3545";
-    delBtn.style.padding = "10px 20px";
-    delBtn.style.width = "fit-content";
-    delBtn.style.marginLeft = "5px";
-    delBtn.onclick = () => deleteGroup(g._id);
-
     div.appendChild(nameBtn);
-    div.appendChild(editBtn);
-    div.appendChild(delBtn);
+
+    // FAqat SUPERADMIN uchun Edit/Delete tugmalar
+    if (ADMIN_ROLE === "superadmin") {
+  const editBtn = document.createElement("button");
+  editBtn.textContent = "Edit";
+  editBtn.className = "edit-btn";
+  editBtn.style.background = "#ffc107";
+  editBtn.style.padding = "10px 20px";
+  editBtn.style.marginLeft = "5px";
+  editBtn.style.width = "fit-content";
+  editBtn.onclick = () => editGroupPrompt(g._id);
+
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "Delete";
+  delBtn.className = "delete-btn";
+  delBtn.style.background = "#dc3545";
+  delBtn.style.padding = "10px 20px";
+  delBtn.style.width = "fit-content";
+  delBtn.style.marginLeft = "5px";
+  delBtn.onclick = () => deleteGroup(g._id);
+
+  div.appendChild(editBtn);
+  div.appendChild(delBtn);
+}
+
+
     groupList.appendChild(div);
   });
-}
-
-async function loadAttendance(groupId) {
-  const table = document.getElementById("attendanceTable");
-  table.innerHTML = `<tr><th>#</th><th>Name</th><th>Surname</th><th>Status</th><th>Date</th></tr>`;
-  if (!groupId) return;
-
-  try {
-    const res = await fetch(`${API_ATTENDANCE}/history/${groupId}`);
-    if (!res.ok) throw new Error("Server error");
-    const data = await res.json();
-
-    if (!data || data.length === 0) {
-      table.innerHTML += `<tr><td colspan="5" style="text-align:center">No attendance records for this group</td></tr>`;
-      return;
-    }
-
-    data.forEach((rec, i) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${i + 1}</td><td>${rec.userId.name}</td><td>${
-        rec.userId.surname
-      }</td><td>${rec.status}</td><td>${new Date(
-        rec.date
-      ).toLocaleDateString()}</td>`;
-      table.appendChild(tr);
-    });
-  } catch (err) {
-    console.error(err);
-    table.innerHTML += `<tr><td colspan="5" style="text-align:center;color:red">Failed to load attendance history</td></tr>`;
-  }
-}
-
-/* MODAL */
-function openModal() {
-  document.getElementById("attendanceModal").style.display = "block";
-}
-function closeModal() {
-  document.getElementById("attendanceModal").style.display = "none";
 }
 
 /* SEND MESSAGE */

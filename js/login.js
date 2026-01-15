@@ -4,12 +4,11 @@ const button = document.getElementById("loginBtn");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
 
   if (!username || !password) {
-    alert("Username va password kiriting");
-    return;
+    return alert("Username va password kiriting");
   }
 
   button.textContent = "Loading...";
@@ -17,25 +16,31 @@ form.addEventListener("submit", async (e) => {
 
   try {
     const res = await fetch(
-      "https://successful-grace-production-5eea.up.railway.app/api/admin/login",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      }
-    );
+  "https://successful-grace-production-5eea.up.railway.app/api/admin/login",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  }
+);
 
-    const data = await res.json();
+const data = await res.json();
+console.log("Login response:", data);
 
-    if (res.ok) {
-      localStorage.setItem("adminToken", data.token);
-      window.location.href = "admin.html";
-    } else {
-      alert(data.error || "Login failed");
-    }
+if (res.ok) {
+  // backenddan kelgan role-ni saqlaymiz
+  localStorage.setItem("ADMIN_ROLE", data.role); // masalan: "superadmin", "admin", "moderator"
+  
+  // keyin admin sahifaga o‘tish
+  window.location.href = "admin.html";
+} else {
+  alert(data.error || "Login failed");
+}
+
+
   } catch (err) {
-    alert("Server bilan ulanishda xatolik");
     console.error(err);
+    alert("Server bilan ulanishda xatolik");
   } finally {
     button.textContent = "Login";
     button.disabled = false;
