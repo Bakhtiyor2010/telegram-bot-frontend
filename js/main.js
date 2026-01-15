@@ -284,22 +284,30 @@ function renderGroups() {
 async function sendMessage() {
   const text = document.getElementById("messageText").value.trim();
   if (!text) return alert("Message empty");
+
+  // selectedUsers bo'sh bo'lmasligi kerak
   if (selectedUsers.size === 0) return alert("Select users");
+
   try {
-    await fetch(API_SEND_MESSAGE, {
+    const res = await fetch(API_ATTENDANCE, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userIds: Array.from(selectedUsers),
-        message: text,
+        userId: Array.from(selectedUsers), // array of user IDs
+        message: text // telegramga jo'natiladigan matn
       }),
     });
-    alert("Message sent");
+
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || "Failed to send message");
+
+    alert("Message sent ✅");
     document.getElementById("messageText").value = "";
     selectedUsers.clear();
     renderTable();
-  } catch {
-    alert("Error sending message");
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
   }
 }
 
@@ -307,18 +315,29 @@ async function sendMessage() {
 async function sendToAll() {
   const text = document.getElementById("messageText").value.trim();
   if (!text) return alert("Message empty");
+
+  if (!users || users.length === 0) return alert("No users to send message");
+
   try {
-    await fetch(API_SEND_MESSAGE, {
+    const res = await fetch(API_ATTENDANCE, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userIds: users.map((u) => u._id), message: text }),
+      body: JSON.stringify({
+        userId: users.map(u => u._id), // barcha foydalanuvchilar
+        message: text
+      }),
     });
-    alert("Message sent to all users!");
+
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || "Failed to send message to all users");
+
+    alert("Message sent to all users ✅");
     document.getElementById("messageText").value = "";
     selectedUsers.clear();
     renderTable();
-  } catch {
-    alert("Error sending message to all users");
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
   }
 }
 
