@@ -287,7 +287,7 @@ async function sendMessage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: u.id,
-          message: `Salom, hurmatli ${u.name || ""} ${
+          message: `Assalomu alaykum, hurmatli ${u.name || ""} ${
             u.surname || ""
           }!\n\n${text}`,
         }),
@@ -315,7 +315,7 @@ async function sendToAll() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: u.id,
-          message: `Salom, hurmatli ${u.name || ""} ${
+          message: `Assalomu alaykum, hurmatli ${u.name || ""} ${
             u.surname || ""
           }!\n\n${text}`,
         }),
