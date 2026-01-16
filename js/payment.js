@@ -192,9 +192,9 @@ function renderTable() {
       <td>${u.surname || "-"}</td>
       <td><a href="tel:${phone}">${phone}</a></td>
       <td>
-        <button class="att-btn present-btn" style="background:#28a745;" onclick="setPaid('${u.id}')">To‘langan</button>
-        <button class="att-btn absent-btn" style="background:#dc3545;" onclick="setUnpaid('${u.id}')">To‘lanmagan</button>
-        <button class="delete-btn" style="background:#ffc107;" onclick="deletePayment('${u.id}')">O‘chirish</button>
+        <button class="att-btn present-btn" style="background:#28a745;" onclick="setPaid('${u.id}')">Paid</button>
+        <button class="att-btn absent-btn" style="background:#dc3545;" onclick="setUnpaid('${u.id}')">Unpaid</button>
+        <button class="delete-btn" style="background:#ffc107;" onclick="deletePayment('${u.id}')">Delete Payment</button>
       </td>
       <td>${paymentStatus}</td>
     `;
