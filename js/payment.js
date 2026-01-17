@@ -117,23 +117,22 @@ async function loadUsers() {
 
     // 🔹 Paymentsdagi timestamp-larni JS Date ga aylantirish
     for (const key in paymentsData) {
-      if (paymentsData[key].startDate) paymentsData[key].startDate = new Date(paymentsData[key].startDate);
-      if (paymentsData[key].endDate) paymentsData[key].endDate = new Date(paymentsData[key].endDate);
+      if (paymentsData[key].paidAt)
+        paymentsData[key].paidAt = new Date(paymentsData[key].paidAt);
     }
 
     // 3️⃣ Map users
     users = usersData
-      .map(u => {
+      .map((u) => {
         const payment = paymentsData[u.id] || {};
         return {
           ...u,
           id: u.id || u._id,
-          isPaid: payment.status === "paid",
-          startDate: payment.startDate || null,
-          endDate: payment.endDate || null
+          isPaid: !!payment.paidAt,
+          paidAt: payment.paidAt || null,
         };
       })
-      .filter(u => u.groupId && u.groupId === currentGroupId);
+      .filter((u) => u.groupId && u.groupId === currentGroupId);
 
     // 4️⃣ Oxirida to‘laganlarni oxiriga chiqarish
     users.sort((a, b) => (a.isPaid === b.isPaid ? 0 : a.isPaid ? 1 : -1));
@@ -166,7 +165,9 @@ function renderTable() {
   }
 
   // 🔹 To‘laganlarni oxiriga chiqarish
-  const sortedUsers = [...users].sort((a, b) => (a.isPaid === b.isPaid ? 0 : a.isPaid ? 1 : -1));
+  const sortedUsers = [...users].sort((a, b) =>
+    a.isPaid === b.isPaid ? 0 : a.isPaid ? 1 : -1
+  );
 
   sortedUsers.forEach((u, index) => {
     const isChecked = selectedUsers.has(u.id);
@@ -174,12 +175,17 @@ function renderTable() {
 
     if (isChecked) tr.classList.add("selected");
 
-    const phone = u.phone ? (u.phone.startsWith("+998") ? u.phone : "+998" + u.phone) : "N/A";
+    const phone = u.phone
+      ? u.phone.startsWith("+998")
+        ? u.phone
+        : "+998" + u.phone
+      : "N/A";
 
     // 🔹 Payment status va rang
-    let paymentStatus = "To‘lanmagan";
-    if (u.isPaid && u.startDate && u.endDate) {
-      paymentStatus = `${formatDate(u.startDate)} - ${formatDate(u.endDate)}`;
+    let paymentStatus = "Unpaid";
+
+    if (u.isPaid && u.paidAt) {
+      paymentStatus = formatDate(u.paidAt);
       tr.style.background = "#d4edda"; // yashil
     } else {
       tr.style.background = "#f8d7da"; // qizil
@@ -205,38 +211,36 @@ function renderTable() {
 
 // -------------------- BUTTON FUNCTIONS --------------------
 async function setPaid(userId) {
-  const user = users.find(u => u.id === userId);
+  const user = users.find((u) => u.id === userId);
   if (!user) return;
 
   const res = await fetch(`${BASE_URL}/payments/paid`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, name: user.name, surname: user.surname })
+    body: JSON.stringify({ userId, name: user.name, surname: user.surname }),
   });
 
   const data = await res.json();
 
   // Backenddan startDate va endDate olindi
   user.isPaid = true;
-  user.startDate = new Date(data.startDate);
-  user.endDate = new Date(data.endDate);
+  user.paidAt = new Date(data.paidAt);
 
   renderTable();
 }
 
 async function setUnpaid(userId) {
-  const user = users.find(u => u.id === userId);
+  const user = users.find((u) => u.id === userId);
   if (!user) return;
 
   await fetch(`${BASE_URL}/payments/unpaid`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, name: user.name, surname: user.surname })
+    body: JSON.stringify({ userId, name: user.name, surname: user.surname }),
   });
 
   user.isPaid = false;
-  user.startDate = null;
-  user.endDate = null;
+  user.paidAt = null;
 
   renderTable();
 }
@@ -246,17 +250,18 @@ async function deletePayment(userId) {
 
   try {
     // 🔹 1️⃣ Backendga so‘rov yuborish
-    const res = await fetch(`${BASE_URL}/payments/${userId}`, { method: "DELETE" });
+    const res = await fetch(`${BASE_URL}/payments/${userId}`, {
+      method: "DELETE",
+    });
     if (!res.ok) throw new Error("Failed to delete payment");
 
     // 🔹 2️⃣ Frontendda userni default holatga qaytarish
-    users = users.map(u => {
+    users = users.map((u) => {
       if (u.id === userId) {
         return {
           ...u,
           isPaid: false,
-          startDate: null,
-          endDate: null
+          paidAt: null,
         };
       }
       return u;
@@ -266,7 +271,6 @@ async function deletePayment(userId) {
 
     // 🔹 3️⃣ Payment status haqida xabar berish
     alert("Payment deleted. User status reset to unpaid.");
-
   } catch (err) {
     console.error(err);
     alert(err.message || "Failed to delete payment");
