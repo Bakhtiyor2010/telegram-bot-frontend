@@ -26,8 +26,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const groupInput = document.getElementById("groupInput");
     const createBtn = document.querySelector('button[onclick="createGroup()"]');
+    const userAuthorization = document.getElementById('userAuthorization')
     if (groupInput) groupInput.style.display = "none";
     if (createBtn) createBtn.style.display = "none";
+    if (userAuthorization) userAuthorization.style.display = "none"
   }
 
   await loadGroups();
