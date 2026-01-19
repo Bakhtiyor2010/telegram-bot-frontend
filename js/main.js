@@ -300,9 +300,11 @@ async function sendMessage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: u.id,
-          message: `Salom, hurmatli ${u.name || ""} ${
+          message: `Assalomu alaykum, hurmatli ${u.name || ""} ${
             u.surname || ""
-          }!\n\n${text}`,
+          }!
+          
+Здравствуйте, уважаемый(ая) ${u.name || ""} ${u.surname || ""}!\n\n${text}`,
         }),
       });
     }
@@ -328,9 +330,11 @@ async function sendToAll() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: u.id,
-          message: `Salom, hurmatli ${u.name || ""} ${
+          message: `Assalomu alaykum, hurmatli ${u.name || ""} ${
             u.surname || ""
-          }!\n\n${text}`,
+          }!
+          
+Здравствуйте, уважаемый(ая) ${u.name || ""} ${u.surname || ""}!\n\n${text}`,
         }),
       });
     }
@@ -374,7 +378,9 @@ async function deleteUser(userId) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          message: `Hurmatli ${user.name}, siz tizimdan o'chirildingiz.`,
+          message: `Hurmatli ${user.name}, siz tizimdan o'chirildingiz.
+          
+Уважаемый(ая) ${user.name}, вы были удалены из системы.`,
         }),
       });
     } catch (err) {
@@ -453,7 +459,9 @@ async function changeUserGroup(userId) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId,
-        message: `Sizning guruhingiz ${newGroup.name} ga o'zgartirildi.`,
+        message: `Sizning guruhingiz ${newGroup.name} ga o'zgartirildi.
+        
+Ваша группа была изменена на ${newGroup.name}.`,
       }),
     });
 

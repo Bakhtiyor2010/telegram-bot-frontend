@@ -230,7 +230,7 @@ async function setPaid(userId, name, surname) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
 
-    const user = users.find(u => u.id === userId);
+    const user = users.find((u) => u.id === userId);
     if (user) {
       user.isPaid = true;
       user.paidAt = new Date(data.paidAt);
@@ -339,7 +339,9 @@ async function sendMessage() {
           userId: u.id,
           message: `Assalomu alaykum, hurmatli ${u.name || ""} ${
             u.surname || ""
-          }!\n\n${text}`,
+          }!
+          
+Здравствуйте, уважаемый(ая) ${u.name || ""} ${u.surname || ""}!\n\n${text}`,
         }),
       });
     }
@@ -367,7 +369,9 @@ async function sendToAll() {
           userId: u.id,
           message: `Assalomu alaykum, hurmatli ${u.name || ""} ${
             u.surname || ""
-          }!\n\n${text}`,
+          }!
+          
+Здравствуйте, уважаемый(ая) ${u.name || ""} ${u.surname || ""}!\n\n${text}`,
         }),
       });
     }
