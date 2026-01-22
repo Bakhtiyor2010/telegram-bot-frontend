@@ -314,24 +314,27 @@ async function viewPaymentHistory(userId) {
     const tbody = document.querySelector("#historyTable tbody");
     tbody.innerHTML = "";
 
-    if (userPayments.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No payment history</td></tr>`;
-    } else {
-      const sorted = userPayments
-        .map((p) => ({
-          name: p.name,
-          surname: p.surname,
-          date: p.date ? new Date(p.date) : null, // <-- shu o‘zgardi
-          status: p.status,
-        }))
-        .sort((a, b) => a.date - b.date);
+    // 🔹 Faqat paid recordlarini ajratib olamiz
+    const paidRecords = userPayments
+      .filter(p => p.status === "paid") // faqat paid
+      .map(p => ({
+        name: p.name || "-",
+        surname: p.surname || "-",
+        date: p.date && p.date.seconds
+          ? new Date(p.date.seconds * 1000)
+          : p.date || null,
+      }))
+      .sort((a, b) => a.date - b.date);
 
-      sorted.forEach((item) => {
+    // 🔹 Agar paid record bo'lmasa ham modalni ko'rsatish
+    if (paidRecords.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No payment history</td></tr>`;
+    } else {
+      paidRecords.forEach(item => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${item.surname || "-"}</td>
-          <td>${item.name || "-"}</td>
-          <td>${item.status || "-"}</td>
+          <td>${item.surname}</td>
+          <td>${item.name}</td>
           <td>${formatDate(item.date)}</td>
         `;
         tbody.appendChild(tr);
