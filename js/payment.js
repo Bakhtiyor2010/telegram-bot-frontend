@@ -155,28 +155,23 @@ async function loadUsers() {
 }
 
 // 🔹 DD/MM/YYYY formatlash funksiyasi
-function formatDate(date) {
-  if (!date) return "-";
-  const d = new Date(date);
-  if (isNaN(d)) return "-";
-
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-
-  return `${day}/${month}/${year}`;
-}
-
+// -------------------- RENDER TABLE --------------------
 function renderTable() {
   tableBody.innerHTML = "";
+
   if (!users.length) {
-    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center">No users in this group</td></tr>`;
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center">
+          No users in this group
+        </td>
+      </tr>`;
     return;
   }
 
   // 🔹 To‘laganlarni oxiriga chiqarish
   const sortedUsers = [...users].sort((a, b) =>
-    a.isPaid === b.isPaid ? 0 : a.isPaid ? 1 : -1,
+    a.isPaid === b.isPaid ? 0 : a.isPaid ? 1 : -1
   );
 
   sortedUsers.forEach((u, index) => {
@@ -191,26 +186,51 @@ function renderTable() {
         : "+998" + u.phone
       : "N/A";
 
-    // 🔹 Payment status va rang
+    // 🔹 Payment status
     let paymentStatus = "Unpaid";
+    tr.style.background = "#f8d7da"; // qizil
 
     if (u.isPaid && u.paidAt) {
       paymentStatus = formatDate(u.paidAt);
       tr.style.background = "#d4edda"; // yashil
-    } else {
-      tr.style.background = "#f8d7da"; // qizil
     }
 
     tr.innerHTML = `
-      <td><input type="checkbox" ${isChecked ? "checked" : ""} onchange="toggleSelect('${u.id}', this)"></td>
+      <td>
+        <input 
+          type="checkbox"
+          ${isChecked ? "checked" : ""}
+          onchange="toggleSelect('${u.id}', this)"
+        >
+      </td>
       <td>${index + 1}</td>
       <td>${u.surname || "-"}</td>
       <td>${u.name || "-"}</td>
       <td><a href="tel:${phone}">${phone}</a></td>
       <td>
-        <button class="att-btn present-btn" style="background:#28a745;" onclick='setPaid("${u.id}", "${u.name}", "${u.surname}")'>Paid</button>
-        <button class="att-btn absent-btn" style="background:#dc3545;" onclick="setUnpaid('${u.id}')">Unpaid</button>
-        <button class="delete-btn" style="background:#17a2b8;" onclick="viewPaymentHistory('${u.id}')">View History</button>
+        <button
+          class="att-btn present-btn paid-btn"
+          style="background:#28a745;"
+          data-id="${u.id}"
+        >
+          Paid
+        </button>
+
+        <button
+          class="att-btn absent-btn"
+          style="background:#dc3545;"
+          onclick="setUnpaid('${u.id}')"
+        >
+          Unpaid
+        </button>
+
+        <button
+          class="delete-btn"
+          style="background:#17a2b8;"
+          onclick="viewPaymentHistory('${u.id}')"
+        >
+          View History
+        </button>
       </td>
       <td>${paymentStatus}</td>
     `;
@@ -218,6 +238,18 @@ function renderTable() {
     tableBody.appendChild(tr);
   });
 }
+
+// -------------------- EVENT DELEGATION --------------------
+tableBody.addEventListener("click", (e) => {
+  if (!e.target.classList.contains("paid-btn")) return;
+
+  const userId = e.target.dataset.id;
+  const user = users.find((u) => u.id === userId);
+
+  if (!user) return;
+
+  setPaid(user.id, user.name, user.surname);
+});
 
 // -------------------- BUTTON FUNCTIONS --------------------
 async function setPaid(userId, name, surname) {
@@ -227,6 +259,7 @@ async function setPaid(userId, name, surname) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, name, surname }),
     });
+
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
 
@@ -235,6 +268,7 @@ async function setPaid(userId, name, surname) {
       user.isPaid = true;
       user.paidAt = new Date(data.paidAt);
     }
+
     renderTable();
   } catch (err) {
     console.error(err);
