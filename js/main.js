@@ -196,9 +196,10 @@ function renderTable() {
       <td>
         ${
           ADMIN_ROLE === "superadmin"
-            ? `<button class="delete-btn" onclick="deleteUser('${u.id}')">Delete</button>
-               <button class="att-btn" style="background:#ffc107;" onclick="viewAttendanceHistory('${u.id}')">View History</button>
-               <button class="att-btn change-group" style="background:#17a2b8;" onclick="changeUserGroup('${u.id}')">Change Group</button>`
+            ? `<button class="att-btn" style="background: #28a745;" onclick="editUser('${u.id}')">Edit</button>
+            <button class="att-btn" style="background:#ffc107;" onclick="viewAttendanceHistory('${u.id}')">View History</button>
+               <button class="att-btn change-group" style="background:#17a2b8;" onclick="changeUserGroup('${u.id}')">Change Group</button>
+               <button class="delete-btn" onclick="deleteUser('${u.id}')">Delete</button>`
             : `<button class="att-btn" style="background:#ffc107;" onclick="viewAttendanceHistory('${u.id}')">View History</button>`
         }
       </td>
@@ -206,6 +207,61 @@ function renderTable() {
 
     tableBody.appendChild(tr);
   });
+}
+
+function editUser(id) {
+  const row = [...document.querySelectorAll("tr")]
+    .find(tr => tr.querySelector(`button[onclick="editUser('${id}')"]`));
+
+  if (!row) return;
+
+  const user = users.find(u => u.id === id);
+
+  const surname = user.surname || "";
+  const name = user.name || "";
+  const phone = user.phone || "";
+
+  row.children[2].innerHTML = `<input type="text" id="edit-surname-${id}" value="${surname}">`;
+  row.children[3].innerHTML = `<input type="text" id="edit-name-${id}" value="${name}">`;
+  row.children[4].innerHTML = `<input type="text" id="edit-phone-${id}" value="${phone}">`;
+
+  row.children[6].innerHTML = `
+    <button class="att-btn" style="background:#007bff" onclick="saveUser('${id}')">Save</button>
+  `;
+}
+
+async function saveUser(id) {
+  const surname = document.getElementById(`edit-surname-${id}`).value.trim();
+  const name = document.getElementById(`edit-name-${id}`).value.trim();
+  const phone = document.getElementById(`edit-phone-${id}`).value.trim();
+
+  try {
+    const res = await fetch(`${API_USERS}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ surname, name, phone })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("Yangilandi");
+
+      const index = users.findIndex(u => u.id === id);
+      if (index !== -1) {
+        users[index] = { ...users[index], ...data };
+      }
+
+      renderTable();
+
+    } else {
+      alert(data.error || "Xatolik");
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("Server xatosi");
+  }
 }
 
 async function markAttendance(userId, status) {

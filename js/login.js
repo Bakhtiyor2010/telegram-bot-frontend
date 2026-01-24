@@ -39,6 +39,7 @@ form.addEventListener("submit", async (e) => {
 
     if (res.ok) {
       localStorage.setItem("ADMIN_ROLE", data.role);
+      localStorage.setItem("ADMIN_USERNAME", data.username);
       window.location.href = "attendance.html";
     } else {
       alert(data.error || "Login failed");
