@@ -158,6 +158,13 @@ th {
     top: 0;
 }
 
+input {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
 .present {
     background: #d4edda;
 }
