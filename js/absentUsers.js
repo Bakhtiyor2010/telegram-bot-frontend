@@ -1,4 +1,4 @@
-const API_ABSENT_USERS = `https://second-telegram-bot-backend.onrender.com/api/attendance`;
+const API_ABSENT_USERS = `https://fayzullaev-ielts-school-backend.onrender.com/api/attendance`;
 const tableBody = document.getElementById("tableBody");
 const hamburger = document.getElementById("hamburger");
 const navLinks = document.getElementById("navLinks");

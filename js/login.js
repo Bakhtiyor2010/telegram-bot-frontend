@@ -26,7 +26,7 @@ form.addEventListener("submit", async (e) => {
 
   try {
     const res = await fetch(
-      "https://second-telegram-bot-backend.onrender.com/api/admin/login",
+      "https://fayzullaev-ielts-school-backend.onrender.com/api/admin/login",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

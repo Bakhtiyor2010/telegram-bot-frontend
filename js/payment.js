@@ -1,4 +1,4 @@
-const BASE_URL = "https://second-telegram-bot-backend.onrender.com/api";
+const BASE_URL = "https://fayzullaev-ielts-school-backend.onrender.com/api";
 
 const API_USERS = `${BASE_URL}/users`;
 const API_GROUPS = `${BASE_URL}/groups`;
