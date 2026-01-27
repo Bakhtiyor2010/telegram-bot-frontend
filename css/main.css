@@ -181,6 +181,11 @@ table {
     table-layout: fixed;
 }
 
+thead {
+    position: sticky;
+    top: 0;
+}
+
 th {
     background: #f9fafb;
     color: var(--text-muted);
