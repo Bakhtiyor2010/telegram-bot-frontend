@@ -111,7 +111,7 @@ function renderGroups() {
 
     if (ADMIN_ROLE === "superadmin") {
       const editBtn = document.createElement("button");
-      editBtn.textContent = "Edit";
+      editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
       editBtn.style.background = "#ffc107";
       editBtn.style.padding = "10px 20px";
       editBtn.style.marginLeft = "5px";
@@ -119,7 +119,7 @@ function renderGroups() {
       editBtn.onclick = () => editGroupPrompt(g.id);
 
       const delBtn = document.createElement("button");
-      delBtn.textContent = "Delete";
+      delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
       delBtn.style.background = "#dc3545";
       delBtn.style.padding = "10px 20px";
       delBtn.style.marginLeft = "5px";
@@ -186,21 +186,35 @@ function renderTable() {
       <td>${u.name || "-"}</td>
       <td><a href="tel:${phone}">${phone}</a></td>
       <td>
-        <button class="att-btn present-btn" onclick="markAttendance('${
+        <button class="success-btn" onclick="markAttendance('${
           u.id
-        }','present')">Present</button>
-        <button class="att-btn absent-btn" onclick="markAttendance('${
+        }','present')"><i class="fa-solid fa-circle-check"></i></button>
+        <button class="danger-btn" onclick="markAttendance('${
           u.id
-        }','absent')">Absent</button>
+        }','absent')"><i class="fa-solid fa-circle-xmark"></i></button>
       </td>
       <td>
         ${
           ADMIN_ROLE === "superadmin"
-            ? `<button class="att-btn" style="background: #28a745;" onclick="editUser('${u.id}')">Edit</button>
-            <button class="att-btn" style="background:#ffc107;" onclick="viewAttendanceHistory('${u.id}')">View History</button>
-               <button class="att-btn change-group" style="background:#17a2b8;" onclick="changeUserGroup('${u.id}')">Change Group</button>
-               <button class="delete-btn" onclick="deleteUser('${u.id}')">Delete</button>`
-            : `<button class="att-btn" style="background:#ffc107;" onclick="viewAttendanceHistory('${u.id}')">View History</button>`
+            ? ` <button style="background: #28a745;" onclick="editUser('${u.id}')">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+
+                <button style="background: #ffc107;" onclick="viewAttendanceHistory('${u.id}')">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                </button>
+
+                <button style="background: #17a2b8;" onclick="changeUserGroup('${u.id}')">
+                  <i class="fa-solid fa-users-gear"></i>
+                </button>
+
+                <button style="background: var(--danger);" onclick="deleteUser('${u.id}')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>`
+              : 
+              ` <button style="background: #ffc107;" onclick="viewAttendanceHistory('${u.id}')">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                </button>`
         }
       </td>
     `;

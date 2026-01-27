@@ -177,27 +177,24 @@ function renderTable() {
       <td><a href="tel:${phone}">${phone}</a></td>
       <td>
         <button
-          class="att-btn present-btn paid-btn"
-          style="background:#28a745;"
+          style="background: #28a745;"
           data-id="${u.id}"
         >
-          Paid
+          <i class="fa-solid fa-circle-check"></i>
         </button>
 
         <button
-          class="att-btn absent-btn"
-          style="background:#dc3545;"
+          style="background: #dc3545;"
           onclick="setUnpaid('${u.id}')"
         >
-          Unpaid
+          <i class="fa-solid fa-circle-xmark"></i>
         </button>
 
         <button
-        class="att-btn"
-          style="background:#17a2b8;"
+           style="background: #ffc107;"
           onclick="viewPaymentHistory('${u.id}')"
         >
-          View History
+          <i class="fa-solid fa-clock-rotate-left"></i>
         </button>
       </td>
       <td>${paymentStatus}</td>

@@ -6,6 +6,10 @@
   <link rel="shortcut icon" href="./images/logo.jpg" type="image/x-icon">
   <title>Admin Panel</title>
   <link rel="stylesheet" href="./css/main.css">
+  <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
   <script src="./js/main.js" defer="true"></script>
 </head>
 <body>
@@ -27,7 +31,7 @@
     <aside class="groups">
       <h2>Groups</h2>
       <input id="groupInput" placeholder="Group name">
-      <button onclick="createGroup()">Create group</button>
+      <button class="primary-btn" onclick="createGroup()">Create group</button>
       <hr>
       <div id="groupLoader" style="display:none;text-align:center;">Loading groups...</div>
       <div id="groupList"></div>
@@ -67,7 +71,7 @@
   background: rgba(0,0,0,0.5); justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; border-radius:8px; width:400px; max-height:80%; overflow-y:auto;">
       <h3>Attendance History</h3>
-      <table id="historyTable" style="width:100%; border-collapse:collapse;">
+      <table id="historyTable">
         <thead>
           <tr>
             <th>Name</th>
@@ -78,8 +82,7 @@
         </thead>
         <tbody></tbody>
       </table>
-      <button onclick="closeHistoryModal()" class="att-btn absent-btn"
-        style="background:#dc3545; margin-top: 10px; margin-left: auto;">Close</button>
+      <button onclick="closeHistoryModal()" style="background:#dc3545; margin-top: 10px; margin-left: auto;"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
 </body>

@@ -1,5 +1,4 @@
 const BASE_URL = "https://fayzullaev-ielts-school-backend.onrender.com/api";
-
 const API_PENDING_USERS = `${BASE_URL}/users/pending`;
 const API_APPROVE = `${BASE_URL}/admin/approve-user`;
 const API_REJECT = `${BASE_URL}/admin/reject-user`;
@@ -84,14 +83,14 @@ function renderTable() {
       <td>${u.groupName}</td>
       <td>
         <button
-           class="att-btn present-btn"
+           style="background: #28a745;"
           onclick="approveUser('${u.id}')">
-          Allow
+          <i class="fa-solid fa-circle-check"></i>
         </button>
         <button
-           class="att-btn absent-btn"
+           style="background: #dc3545;"
           onclick="rejectUser('${u.id}')">
-          Not Allow
+          <i class="fa-solid fa-ban"></i>
         </button>
       </td>
     `;
