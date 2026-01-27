@@ -172,7 +172,7 @@ tr:hover {
   .nav-links {
     display: none;
     flex-direction: column;
-    background: #007bff;
+    background: var(--bg-dark);
     position: absolute;
     top: 55px;
     left: 0;

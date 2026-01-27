@@ -255,6 +255,7 @@ textarea:focus {
         position: absolute;
         top: 55px;
         left: 0;
+        background: var(--bg-dark);
         width: 100%;
         padding: 15px 0;
     }
