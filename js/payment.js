@@ -177,6 +177,7 @@ function renderTable() {
       <td><a href="tel:${phone}">${phone}</a></td>
       <td>
         <button
+          class="paid-btn"
           style="background: #28a745;"
           data-id="${u.id}"
         >
@@ -205,11 +206,11 @@ function renderTable() {
 }
 
 tableBody.addEventListener("click", (e) => {
-  if (!e.target.classList.contains("paid-btn")) return;
+  const btn = e.target.closest(".paid-btn");
+  if (!btn) return;
 
-  const userId = e.target.dataset.id;
+  const userId = btn.dataset.id;
   const user = users.find((u) => u.id === userId);
-
   if (!user) return;
 
   setPaid(user.id, user.name, user.surname);
