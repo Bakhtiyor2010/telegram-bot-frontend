@@ -217,6 +217,14 @@ textarea:focus {
     border-color: var(--accent);
 }
 
+.present {
+  background-color: #dcfce7; /* light green */
+}
+
+.absent {
+  background-color: #fee2e2; /* light red */
+}
+
 @media (max-width: 1250px) {
     .container {
         flex-direction: column;
