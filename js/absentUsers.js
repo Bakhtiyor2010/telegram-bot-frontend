@@ -23,10 +23,8 @@ async function fetchAbsentUsers() {
     if (!res.ok) throw new Error("Failed to fetch absent users");
     const data = await res.json();
 
-    const today = getToday();
-    users = data.filter(
-      (u) => u.status === "absent" && u.date?.startsWith(today),
-    );
+    const todayDateStr = getToday();
+users = data.filter(u => u.status === "absent" && formatDate(u.date) === todayDateStr);
 
     renderTable();
   } catch (err) {
