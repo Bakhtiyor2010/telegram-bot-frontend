@@ -483,21 +483,32 @@ async function editGroupPrompt(groupId) {
   const newName = prompt("Enter new group name", group.name);
   if (!newName) return;
 
+  const oldName = group.name;
+  group.name = newName;
+  renderGroups();
+  if (currentGroupId === groupId) {
+    document.getElementById("groupTitle").textContent = newName;
+  }
+
   try {
     const res = await fetch(`${API_GROUPS}/${groupId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newName }),
     });
-    if (!res.ok) throw new Error("Failed to edit group");
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to edit group on server");
+    }
 
     await loadGroups();
-    if (currentGroupId === groupId) {
-      document.getElementById("groupTitle").textContent = newName;
-    }
   } catch (err) {
-    console.error(err);
-    alert("Failed to edit group");
+    console.error("Edit group error:", err);
+
+    if (err.message !== "Failed to fetch") {
+      alert("Failed to edit group: " + err.message);
+    }
   }
 }
 

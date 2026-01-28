@@ -91,32 +91,53 @@ async function loadUsers() {
 
   tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;font-size:20px;">Loading...</td></tr>`;
 
+  let paymentsData = {}; // <- default empty in case payments fail
+
   try {
+    // 1️⃣ Load users
     const resUsers = await fetch(API_USERS);
     if (!resUsers.ok) throw new Error("Failed to load users");
     const usersData = await resUsers.json();
 
-    const resPayments = await fetch(`${BASE_URL}/payments`);
-    if (!resPayments.ok) throw new Error("Failed to load payments");
-    const paymentsData = await resPayments.json();
+    // 2️⃣ Load payments (optional)
+    try {
+      const resPayments = await fetch(`${BASE_URL}/payments`);
+      if (!resPayments.ok) throw new Error("Failed to load payments");
+      paymentsData = await resPayments.json();
 
-    for (const key in paymentsData) {
-      if (paymentsData[key].paidAt)
-        paymentsData[key].paidAt = new Date(paymentsData[key].paidAt);
+      // Convert paidAt to Date objects safely
+      for (const key in paymentsData) {
+        if (!paymentsData[key] || !paymentsData[key].history) continue;
+        paymentsData[key].history.forEach(h => {
+          if (h.date instanceof Object && h.date !== null) h.date = new Date(h.date);
+        });
+      }
+    } catch (err) {
+      console.warn("Payments not loaded:", err.message);
     }
 
-    users = usersData
-      .map((u) => {
-        const payment = paymentsData[u.id] || {};
-        return {
-          ...u,
-          id: u.id || u._id,
-          isPaid: !!payment.paidAt,
-          paidAt: payment.paidAt || null,
-        };
-      })
-      .filter((u) => u.groupId && u.groupId === currentGroupId);
+    // 3️⃣ Merge users with payments
+users = usersData
+  .map(u => {
+    const payment = paymentsData[u.id] || {};
+    const lastPaid =
+      payment.history && payment.history.length
+        ? payment.history
+            .filter(h => h.status === "paid" && h.date)
+            .map(h => ({ ...h, date: new Date(h.date) })) // convert to Date
+            .sort((a, b) => b.date.getTime() - a.date.getTime())[0]
+        : null;
 
+    return {
+      ...u,
+      id: u.id || u._id,
+      isPaid: !!lastPaid,
+      paidAt: lastPaid ? lastPaid.date : null,
+    };
+  })
+  .filter(u => u.groupId && u.groupId === currentGroupId);
+
+    // 4️⃣ Sort: unpaid first
     users.sort((a, b) => (a.isPaid === b.isPaid ? 0 : a.isPaid ? 1 : -1));
 
     renderTable();
@@ -130,71 +151,36 @@ function renderTable() {
   tableBody.innerHTML = "";
 
   if (!users.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="7" style="text-align:center">
-          No users in this group
-        </td>
-      </tr>`;
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center">No users in this group</td></tr>`;
     return;
   }
 
-  const sortedUsers = [...users].sort((a, b) =>
-    a.isPaid === b.isPaid ? 0 : a.isPaid ? 1 : -1,
-  );
-
-  sortedUsers.forEach((u, index) => {
-    const isChecked = selectedUsers.has(u.id);
+  users.forEach((u, index) => {
     const tr = document.createElement("tr");
 
-    if (isChecked) tr.classList.add("selected");
+    tr.style.background = u.isPaid ? "#d4edda" : "#f8d7da";
 
-    const phone = u.phone
-      ? u.phone.startsWith("+998")
-        ? u.phone
-        : "+998" + u.phone
-      : "N/A";
+    if (selectedUsers.has(u.id)) tr.classList.add("selected");
 
-    let paymentStatus = "Unpaid";
-    tr.style.background = "#f8d7da";
-
-    if (u.isPaid && u.paidAt) {
-      paymentStatus = formatDate(u.paidAt);
-      tr.style.background = "#d4edda";
-    }
+    const phone = u.phone ? (u.phone.startsWith("+998") ? u.phone : "+998" + u.phone) : "N/A";
+    const paymentStatus = u.isPaid ? (u.paidAt ? formatDate(u.paidAt) : "Paid") : "Unpaid";
 
     tr.innerHTML = `
       <td>
-        <input 
-          type="checkbox"
-          ${isChecked ? "checked" : ""}
-          onchange="toggleSelect('${u.id}', this)"
-        >
+        <input type="checkbox" ${selectedUsers.has(u.id) ? "checked" : ""} onchange="toggleSelect('${u.id}', this)">
       </td>
       <td>${index + 1}</td>
       <td>${u.surname || "-"}</td>
       <td>${u.name || "-"}</td>
       <td><a href="tel:${phone}">${phone}</a></td>
       <td>
-        <button
-          class="paid-btn"
-          style="background: #28a745;"
-          data-id="${u.id}"
-        >
+        <button class="paid-btn" style="background: #28a745;" data-id="${u.id}">
           <i class="fa-solid fa-circle-check"></i>
         </button>
-
-        <button
-          style="background: #dc3545;"
-          onclick="setUnpaid('${u.id}')"
-        >
+        <button style="background: #dc3545;" onclick="setUnpaid('${u.id}')">
           <i class="fa-solid fa-circle-xmark"></i>
         </button>
-
-        <button
-           style="background: #ffc107;"
-          onclick="viewPaymentHistory('${u.id}')"
-        >
+        <button style="background: #ffc107;" onclick="viewPaymentHistory('${u.id}')">
           <i class="fa-solid fa-clock-rotate-left"></i>
         </button>
       </td>
@@ -227,10 +213,10 @@ async function setPaid(userId, name, surname) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
 
-    const user = users.find((u) => u.id === userId);
+    const user = users.find(u => u.id === userId);
     if (user) {
       user.isPaid = true;
-      user.paidAt = new Date(data.paidAt);
+      user.paidAt = data.paidAt ? new Date(data.paidAt) : new Date();
     }
 
     renderTable();
@@ -241,25 +227,27 @@ async function setPaid(userId, name, surname) {
 }
 
 async function setUnpaid(userId) {
-  const user = users.find((u) => u.id === userId);
-  if (!user) return;
+  const user = users.find(u => u.id === userId);
+  if (!user) return alert("User not found");
 
-  const res = await fetch(`${BASE_URL}/payments/unpaid`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, name: user.name, surname: user.surname }),
-  });
+  try {
+    const res = await fetch(`${BASE_URL}/payments/unpaid`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, name: user.name, surname: user.surname }),
+    });
 
-  const data = await res.json();
+    const data = await res.json();
+    if (!res.ok || !data.unpaidAt) throw new Error(data.error || "Failed to mark as unpaid");
 
-  if (!data.success) {
-    return alert("Failed to mark as unpaid");
+    user.isPaid = false;
+    user.paidAt = null;
+
+    renderTable();
+  } catch (err) {
+    console.error("Unpaid error:", err);
+    alert(err.message);
   }
-
-  user.isPaid = false;
-  user.paidAt = null;
-
-  renderTable();
 }
 
 function closeHistoryModal() {
@@ -278,16 +266,16 @@ async function viewPaymentHistory(userId) {
     tbody.innerHTML = "";
 
     const paidRecords = userPayments
-      .filter((p) => p.status === "paid")
-      .map((p) => ({
-        name: p.name || "-",
-        surname: p.surname || "-",
-        date:
-          p.date && p.date.seconds
-            ? new Date(p.date.seconds * 1000)
-            : p.date || null,
-      }))
-      .sort((a, b) => a.date - b.date);
+  .filter((p) => p.status === "paid")
+  .map((p) => ({
+    name: p.name || "-",
+    surname: p.surname || "-",
+    date:
+      p.date?.toDate
+        ? p.date.toDate()
+        : p.date || null,
+  }))
+  .sort((a, b) => a.date - b.date);
 
     if (paidRecords.length === 0) {
       tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No payment history</td></tr>`;
@@ -299,7 +287,7 @@ async function viewPaymentHistory(userId) {
           <td>${item.name}</td>
           <td>${formatDate(item.date)}</td>
         `;
-        tbody.appendChild(tr);
+        tbody.prepend(tr);
       });
     }
 

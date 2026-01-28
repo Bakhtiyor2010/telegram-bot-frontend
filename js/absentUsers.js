@@ -14,7 +14,17 @@ function getToday() {
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
-  return `${year}-${month}-${day}`;
+  return `${day}-${month}-${year}`;
+}
+
+function formatDateToYMD(date) {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (isNaN(d)) return "-";
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
 }
 
 async function fetchAbsentUsers() {
@@ -24,11 +34,13 @@ async function fetchAbsentUsers() {
     const data = await res.json();
 
     const todayDateStr = getToday();
-users = data.filter(u => u.status === "absent" && formatDate(u.date) === todayDateStr);
+    users = data.filter(
+      (u) => u.status === "absent" && formatDateToYMD(u.date) === todayDateStr
+    );
 
     renderTable();
   } catch (err) {
-    tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:red;">${err.message}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:red;">${err.message}</td></tr>`;
   }
 }
 
@@ -36,7 +48,7 @@ function renderTable() {
   tableBody.innerHTML = "";
 
   if (!users.length) {
-    tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No absent users</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No absent users</td></tr>`;
     return;
   }
 
@@ -54,21 +66,11 @@ function renderTable() {
       <td>${u.name || "-"}</td>
       <td><a href="tel:${phone}">${phone}</a></td>
       <td>${u.groupName || "-"}</td>
-      <td>${formatDate(u.date)}</td>
+      <td>${formatDateToYMD(u.date)}</td>
       <td style="text-transform: capitalize;">${u.admin || "-"}</td>
     `;
     tableBody.appendChild(tr);
   });
-}
-
-function formatDate(date) {
-  if (!date) return "-";
-  const d = new Date(date);
-  if (isNaN(d)) return "-";
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
 }
 
 fetchAbsentUsers();
