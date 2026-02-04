@@ -44,7 +44,11 @@ async function loadPendingUsers() {
       telegramId: u.telegramId,
       firstName: u.firstName || "-",
       lastName: u.lastName || "-",
-      phone: u.phone ? (u.phone.startsWith("+998") ? u.phone : "+998" + u.phone) : "N/A",
+      phone: u.phone
+        ? u.phone.startsWith("+998")
+          ? u.phone
+          : "+998" + u.phone
+        : "N/A",
       groupName: u.groupName || "—",
     }));
 
@@ -73,8 +77,12 @@ function renderTable() {
     return;
   }
 
+  const fragment = document.createDocumentFragment();
+
   users.forEach((u, index) => {
     const tr = document.createElement("tr");
+    tr.dataset.userid = u.id;
+
     tr.innerHTML = `
       <td>${index + 1}</td>
       <td>${u.lastName}</td>
@@ -82,21 +90,33 @@ function renderTable() {
       <td><a href="tel:${u.phone}">${u.phone}</a></td>
       <td>${u.groupName}</td>
       <td>
-        <button
-           style="background: #28a745;"
-          onclick="approveUser('${u.id}')">
+        <button class="approve-btn" style="background: #28a745;" data-id="${u.id}">
           <i class="fa-solid fa-circle-check"></i>
         </button>
-        <button
-           style="background: #dc3545;"
-          onclick="rejectUser('${u.id}')">
+        <button class="reject-btn" style="background: #dc3545;" data-id="${u.id}">
           <i class="fa-solid fa-ban"></i>
         </button>
       </td>
     `;
-    tableBody.appendChild(tr);
+
+    fragment.appendChild(tr);
   });
+
+  tableBody.appendChild(fragment);
 }
+
+tableBody.addEventListener("click", async (e) => {
+  const approveBtn = e.target.closest(".approve-btn");
+  const rejectBtn = e.target.closest(".reject-btn");
+
+  if (!approveBtn && !rejectBtn) return;
+
+  const userId = (approveBtn || rejectBtn).dataset.id;
+  if (!userId) return;
+
+  if (approveBtn) await approveUser(userId);
+  if (rejectBtn) await rejectUser(userId);
+});
 
 async function approveUser(telegramId) {
   if (!confirm("Approve this user?")) return;
@@ -110,7 +130,17 @@ async function approveUser(telegramId) {
 
     users = users.filter((u) => u.id !== telegramId);
     selectedUsers.delete(telegramId);
-    renderTable();
+
+    const row = tableBody.querySelector(`tr[data-userid='${telegramId}']`);
+    if (row) row.remove();
+
+    if (!users.length) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center;">No pending users</td>
+        </tr>
+      `;
+    }
   } catch (err) {
     console.error(err);
     alert("Failed to approve user: " + err.message);
@@ -121,14 +151,26 @@ async function rejectUser(telegramId) {
   if (!confirm("Reject this user?")) return;
 
   try {
-    const res = await fetch(`${API_REJECT}/${telegramId}`, { method: "DELETE" });
+    const res = await fetch(`${API_REJECT}/${telegramId}`, {
+      method: "DELETE",
+    });
     if (!res.ok) throw new Error("Failed to reject user");
 
     alert("User rejected successfully");
 
     users = users.filter((u) => u.id !== telegramId);
     selectedUsers.delete(telegramId);
-    renderTable();
+
+    const row = tableBody.querySelector(`tr[data-userid='${telegramId}']`);
+    if (row) row.remove();
+
+    if (!users.length) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center;">No pending users</td>
+        </tr>
+      `;
+    }
   } catch (err) {
     console.error(err);
     alert("Failed to reject user: " + err.message);

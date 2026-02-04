@@ -14,12 +14,10 @@ togglePassword.addEventListener("click", () => {
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+  const username = document.getElementById("username").value.trim();
+  const password = passwordInput.value.trim();
 
-  if (!username || !password) {
-    return alert("Username va password kiriting");
-  }
+  if (!username || !password) return alert("Username va password kiriting");
 
   button.textContent = "Loading...";
   button.disabled = true;
@@ -35,17 +33,15 @@ form.addEventListener("submit", async (e) => {
     );
 
     const data = await res.json();
-    console.log("Login response:", data);
 
-    if (res.ok) {
+    if (res.ok && data.role) {
       localStorage.setItem("ADMIN_ROLE", data.role);
       localStorage.setItem("ADMIN_USERNAME", data.username);
       window.location.href = "attendance.html";
     } else {
       alert(data.error || "Login failed");
     }
-  } catch (err) {
-    console.error(err);
+  } catch {
     alert("Server bilan ulanishda xatolik");
   } finally {
     button.textContent = "Login";

@@ -140,14 +140,11 @@ async function loadUsers() {
   tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;font-size:20px;">Loading...</td></tr>`;
 
   try {
-    const res = await fetch(API_USERS);
+    const res = await fetch(`${API_USERS}?groupId=${currentGroupId}`);
     if (!res.ok) throw new Error("Failed to load users");
     const data = await res.json();
 
-    users = data
-      .map((u) => ({ ...u, id: u.id || u._id }))
-      .filter((u) => u.groupId && u.groupId === currentGroupId);
-
+    users = data.map((u) => ({ ...u, id: u.id || u._id }));
     renderTable();
   } catch (err) {
     console.error(err);
@@ -162,10 +159,13 @@ function renderTable() {
     return;
   }
 
+  const fragment = document.createDocumentFragment();
+
   users.forEach((u, index) => {
     const status = attendance[u.id];
     const isChecked = selectedUsers.has(u.id);
     const tr = document.createElement("tr");
+    tr.dataset.userid = u.id;
 
     if (status === "present") tr.classList.add("present");
     if (status === "absent") tr.classList.add("absent");
@@ -178,58 +178,41 @@ function renderTable() {
       : "N/A";
 
     tr.innerHTML = `
-      <td><input type="checkbox" ${
-        isChecked ? "checked" : ""
-      } onchange="toggleSelect('${u.id}', this)"></td>
+      <td><input type="checkbox" ${isChecked ? "checked" : ""} onchange="toggleSelect('${u.id}', this)"></td>
       <td>${index + 1}</td>
       <td>${u.surname || "-"}</td>
       <td>${u.name || "-"}</td>
       <td><a href="tel:${phone}">${phone}</a></td>
       <td>
-        <button class="success-btn" onclick="markAttendance('${
-          u.id
-        }','present')"><i class="fa-solid fa-circle-check"></i></button>
-        <button class="danger-btn" onclick="markAttendance('${
-          u.id
-        }','absent')"><i class="fa-solid fa-circle-xmark"></i></button>
+        <button class="success-btn" onclick="markAttendance('${u.id}','present')"><i class="fa-solid fa-circle-check"></i></button>
+        <button class="danger-btn" onclick="markAttendance('${u.id}','absent')"><i class="fa-solid fa-circle-xmark"></i></button>
       </td>
       <td>
         ${
           ADMIN_ROLE === "superadmin"
-            ? ` <button style="background: #28a745;" onclick="editUser('${u.id}')">
-                  <i class="fa-solid fa-pen"></i>
-                </button>
-
-                <button style="background: #ffc107;" onclick="viewAttendanceHistory('${u.id}')">
-                  <i class="fa-solid fa-clock-rotate-left"></i>
-                </button>
-
-                <button style="background: #17a2b8;" onclick="changeUserGroup('${u.id}')">
-                  <i class="fa-solid fa-users-gear"></i>
-                </button>
-
-                <button style="background: var(--danger);" onclick="deleteUser('${u.id}')">
-                  <i class="fa-solid fa-trash"></i>
-                </button>`
-              : 
-              ` <button style="background: #ffc107;" onclick="viewAttendanceHistory('${u.id}')">
-                  <i class="fa-solid fa-clock-rotate-left"></i>
-                </button>`
+            ? `<button style="background: #28a745;" onclick="editUser('${u.id}')"><i class="fa-solid fa-pen"></i></button>
+               <button style="background: #ffc107;" onclick="viewAttendanceHistory('${u.id}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
+               <button style="background: #17a2b8;" onclick="changeUserGroup('${u.id}')"><i class="fa-solid fa-users-gear"></i></button>
+               <button style="background: var(--danger);" onclick="deleteUser('${u.id}')"><i class="fa-solid fa-trash"></i></button>`
+            : `<button style="background: #ffc107;" onclick="viewAttendanceHistory('${u.id}')"><i class="fa-solid fa-clock-rotate-left"></i></button>`
         }
       </td>
     `;
 
-    tableBody.appendChild(tr);
+    fragment.appendChild(tr);
   });
+
+  tableBody.appendChild(fragment);
 }
 
 function editUser(id) {
-  const row = [...document.querySelectorAll("tr")]
-    .find(tr => tr.querySelector(`button[onclick="editUser('${id}')"]`));
+  const row = [...document.querySelectorAll("tr")].find((tr) =>
+    tr.querySelector(`button[onclick="editUser('${id}')"]`),
+  );
 
   if (!row) return;
 
-  const user = users.find(u => u.id === id);
+  const user = users.find((u) => u.id === id);
 
   const surname = user.surname || "";
   const name = user.name || "";
@@ -253,7 +236,7 @@ async function saveUser(id) {
     const res = await fetch(`${API_USERS}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ surname, name, phone })
+      body: JSON.stringify({ surname, name, phone }),
     });
 
     const data = await res.json();
@@ -261,17 +244,15 @@ async function saveUser(id) {
     if (res.ok) {
       alert("Yangilandi");
 
-      const index = users.findIndex(u => u.id === id);
+      const index = users.findIndex((u) => u.id === id);
       if (index !== -1) {
         users[index] = { ...users[index], ...data };
       }
 
       renderTable();
-
     } else {
       alert(data.error || "Xatolik");
     }
-
   } catch (err) {
     console.error(err);
     alert("Server xatosi");
@@ -282,7 +263,12 @@ async function markAttendance(userId, status) {
   if (!currentGroupId) return alert("Select a group first");
 
   attendance[userId] = status;
-  renderTable();
+
+  const row = tableBody.querySelector(`tr[data-userid='${userId}']`);
+  if (row) {
+    row.classList.remove("present", "absent");
+    row.classList.add(status);
+  }
 
   try {
     const res = await fetch(API_ATTENDANCE, {
@@ -309,41 +295,29 @@ async function markAttendance(userId, status) {
 
 async function viewAttendanceHistory(userId) {
   try {
-    const res = await fetch(API_ATTENDANCE);
+    const res = await fetch(`${API_ATTENDANCE}?userId=${userId}`);
     if (!res.ok) throw new Error("Failed to load attendance history");
 
     const attendanceData = await res.json();
-
-    const user = users.find((u) => u.id === userId);
-    if (!user || !user.telegramId) {
-      alert("Telegram ID not found");
-      return;
-    }
-
-    const userHistory = attendanceData
-      .filter((a) => String(a.telegramId) === String(user.telegramId))
-      .filter((p) => p.status != "paid" && p.status != "unpaid")
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-
     const tbody = document.querySelector("#historyTable tbody");
     tbody.innerHTML = "";
 
-    if (!userHistory.length) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="4" style="text-align:center;">No attendance history</td>
-        </tr>`;
+    if (!attendanceData.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No attendance history</td></tr>`;
     } else {
-      userHistory.forEach((h) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
+      const rows = attendanceData
+        .map(
+          (h) => `
+        <tr>
           <td>${h.name || "-"}</td>
           <td>${h.surname || "-"}</td>
           <td>${h.status}</td>
           <td>${new Date(h.date).toLocaleDateString("en-GB")}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+        </tr>
+      `,
+        )
+        .join("");
+      tbody.innerHTML = rows;
     }
 
     document.getElementById("historyModal").style.display = "flex";
@@ -363,25 +337,29 @@ async function sendMessage() {
   if (!selectedUsers.size) return alert("Select users");
 
   const usersToSend = users.filter((u) => selectedUsers.has(u.id));
+
   try {
-    for (const u of usersToSend) {
-      await fetch(API_ATTENDANCE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: u.id,
-          message: `Assalomu alaykum, hurmatli ${u.name || ""} ${
-            u.surname || ""
-          }!
-          
-Здравствуйте, уважаемый(ая) ${u.name || ""} ${u.surname || ""}!\n\n${text}`,
+    // send all messages in parallel instead of sequentially
+    await Promise.all(
+      usersToSend.map((u) =>
+        fetch(API_ATTENDANCE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: u.id,
+            message: `Assalomu alaykum, hurmatli ${u.name || ""} ${u.surname || ""}!\nЗдравствуйте, уважаемый(ая) ${u.name || ""} ${u.surname || ""}!\n\n${text}`,
+          }),
         }),
-      });
-    }
+      ),
+    );
+
     alert("Message sent ✅");
     document.getElementById("messageText").value = "";
     selectedUsers.clear();
-    renderTable();
+
+    tableBody
+      .querySelectorAll("tr")
+      .forEach((row) => row.classList.remove("selected"));
   } catch (err) {
     console.error(err);
     alert("Server error");
@@ -394,24 +372,25 @@ async function sendToAll() {
   if (!users.length) return alert("No users to send message");
 
   try {
-    for (const u of users) {
-      await fetch(API_ATTENDANCE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: u.id,
-          message: `Assalomu alaykum, hurmatli ${u.name || ""} ${
-            u.surname || ""
-          }!
-          
-Здравствуйте, уважаемый(ая) ${u.name || ""} ${u.surname || ""}!\n\n${text}`,
+    await Promise.all(
+      users.map((u) =>
+        fetch(API_ATTENDANCE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: u.id,
+            message: `Assalomu alaykum, hurmatli ${u.name || ""} ${u.surname || ""}!\nЗдравствуйте, уважаемый(ая) ${u.name || ""} ${u.surname || ""}!\n\n${text}`,
+          }),
         }),
-      });
-    }
+      ),
+    );
+
     alert("Message sent to all ✅");
     document.getElementById("messageText").value = "";
     selectedUsers.clear();
-    renderTable();
+    tableBody
+      .querySelectorAll("tr")
+      .forEach((row) => row.classList.remove("selected"));
   } catch (err) {
     console.error(err);
     alert("Server error");
@@ -551,13 +530,22 @@ async function changeUserGroup(userId) {
 function toggleSelect(id, checkbox) {
   if (checkbox.checked) selectedUsers.add(id);
   else selectedUsers.delete(id);
-  renderTable();
+
+  const row = tableBody.querySelector(`tr[data-userid='${id}']`);
+  if (row) row.classList.toggle("selected", checkbox.checked);
 }
 
 function toggleSelectAll(checkbox) {
   if (checkbox.checked) users.forEach((u) => selectedUsers.add(u.id));
   else selectedUsers.clear();
-  renderTable();
+
+  tableBody.querySelectorAll("tr").forEach((row) => {
+    const input = row.querySelector("input[type='checkbox']");
+    if (input) {
+      input.checked = checkbox.checked;
+      row.classList.toggle("selected", checkbox.checked);
+    }
+  });
 }
 
 function createGroup() {
