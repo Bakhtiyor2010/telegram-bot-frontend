@@ -1,4 +1,4 @@
-const BASE_URL = "https://fayzullaev-ielts-school-backend.onrender.com/api";
+const BASE_URL = "https://fayzullaev-ielts-school-backend-0mjh.onrender.com/api";
 const API_PENDING_USERS = `${BASE_URL}/users/pending`;
 const API_APPROVE = `${BASE_URL}/admin/approve-user`;
 const API_REJECT = `${BASE_URL}/admin/reject-user`;
