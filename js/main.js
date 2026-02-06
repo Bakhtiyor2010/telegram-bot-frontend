@@ -297,10 +297,6 @@ async function markAttendance(userId, status) {
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to save attendance");
-
-    alert(
-      `Attendance for ${users.find((u) => u.id === userId)?.name || "user"} saved as "${status.toUpperCase()}" ✅`,
-    );
   } catch (err) {
     console.error(err);
     alert("Server error. Check backend logs!");
